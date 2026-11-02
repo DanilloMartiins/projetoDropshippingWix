@@ -248,16 +248,16 @@ export default function App() {
 
   // Checkout com bloqueio para usuários sem conta (antifraude)
   const handleCheckout = async () => {
-    // Se não estiver logado, bloqueia a ida ao pagamento e exige login/conta
+    // Se não estiver logado, bloqueia a ida ao pagamento e exige login/conta com foco em benefícios
     if (!user) {
       setIsCartOpen(false);
-      setAuthNotice('For fraud prevention and secure USPS tracking, please sign in or create an account to proceed with your order.');
+      setAuthNotice('Create a free account or sign in to complete your purchase, activate your 30-day warranty, and track your USPS priority delivery.');
       setIsAuthOpen(true);
       return;
     }
 
     setCheckoutNotification(true);
-    const result = await createCheckout(cartItems);
+    const result = await createCheckout(cartItems, user?.email);
     setTimeout(() => {
       setCheckoutNotification(false);
       if (result && result.checkoutUrl) {

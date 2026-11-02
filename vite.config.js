@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import productsHandler from './api/products.js';
 import membersHandler from './api/members.js';
 import ordersHandler from './api/orders.js';
+import checkoutHandler from './api/checkout.js';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -39,6 +40,14 @@ export default defineConfig(({ mode }) => {
               await membersHandler(req, createMockRes(res));
             } else if (url === '/api/orders') {
               await ordersHandler(req, createMockRes(res));
+            } else if (url === '/api/checkout') {
+              // Parse body simples para o dev middleware
+              let body = '';
+              req.on('data', chunk => { body += chunk; });
+              req.on('end', async () => {
+                try { req.body = body ? JSON.parse(body) : {}; } catch { req.body = {}; }
+                await checkoutHandler(req, createMockRes(res));
+              });
             } else {
               next();
             }

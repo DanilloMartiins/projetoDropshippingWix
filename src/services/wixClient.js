@@ -28,29 +28,32 @@ export async function fetchWixProducts() {
   }
 }
 
-export async function createCheckout(cartItems) {
+export async function createCheckout(cartItems, buyerEmail = '') {
   try {
-    // 1. Prepare items payload for Wix eCommerce API
-    const lineItems = cartItems.map(item => ({
-      name: item.product.name,
-      quantity: item.quantity,
-      price: item.product.price,
-      productId: item.product.id
-    }));
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ cartItems, buyerEmail })
+    });
 
-    // Redirect para o checkout seguro da loja Wix
-    const hostedCheckoutUrl = `https://www.${STORE_DOMAIN}/cart`;
+    if (res.ok) {
+      const data = await res.json();
+      if (data.checkoutUrl) {
+        return data;
+      }
+    }
 
+    // Fallback padrão para o carrinho hospedado
     return {
       success: true,
-      checkoutUrl: hostedCheckoutUrl,
-      lineItems
+      checkoutUrl: `https://www.${STORE_DOMAIN}/cart`
     };
   } catch (error) {
-    console.error('Failed to create Wix checkout session:', error);
+    console.warn('Erro ao chamar /api/checkout, usando fallback:', error.message);
     return {
-      success: false,
-      error: error.message,
+      success: true,
       checkoutUrl: `https://www.${STORE_DOMAIN}/cart`
     };
   }
