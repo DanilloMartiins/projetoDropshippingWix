@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Search, Heart, Menu, X, Flame } from 'lucide-react';
+import { ShoppingBag, Search, Heart, Menu, X, Flame, User as UserIcon } from 'lucide-react';
 import { CATEGORIES } from '../data/products';
 
 export default function Navbar({ 
@@ -9,7 +9,10 @@ export default function Navbar({
   onOpenCart, 
   searchQuery, 
   onSearchChange,
-  wishlistCount
+  wishlistCount,
+  user,
+  onOpenAuth,
+  onOpenAccount
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -21,6 +24,14 @@ export default function Navbar({
     const el = document.getElementById('catalog-section');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleUserClick = () => {
+    if (user) {
+      onOpenAccount();
+    } else {
+      onOpenAuth();
     }
   };
 
@@ -70,8 +81,8 @@ export default function Navbar({
           )}
         </div>
 
-        {/* Right Actions: Search (mobile), Wishlist, Cart */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        {/* Right Actions: Search (mobile), User Profile, Wishlist, Cart */}
+        <div className="flex items-center gap-2.5 sm:gap-4">
           {/* Mobile search toggle */}
           <button 
             onClick={() => setSearchOpen(!searchOpen)}
@@ -79,6 +90,31 @@ export default function Navbar({
             aria-label="Search"
           >
             <Search className="w-5 h-5" />
+          </button>
+
+          {/* User Account / Sign In Trigger */}
+          <button
+            onClick={handleUserClick}
+            className="flex items-center gap-2 py-1.5 px-3 rounded-full border border-slate-800 bg-[#0F1626]/80 hover:border-cyan-500/50 hover:bg-slate-800/80 text-xs text-slate-200 transition-all cursor-pointer"
+            title={user ? 'My Account & Orders' : 'Sign In'}
+          >
+            {user ? (
+              <>
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-6 h-6 rounded-full object-cover border border-cyan-400"
+                />
+                <span className="hidden sm:inline font-semibold text-cyan-300 max-w-[90px] truncate">
+                  {user.name.split(' ')[0]}
+                </span>
+              </>
+            ) : (
+              <>
+                <UserIcon className="w-4 h-4 text-cyan-400" />
+                <span className="hidden sm:inline font-medium text-slate-300">Sign In</span>
+              </>
+            )}
           </button>
 
           {/* Wishlist Icon */}

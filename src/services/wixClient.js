@@ -3,9 +3,30 @@
  * Connects Vektor Studio Front-End with Wix Stores Backend & Checkout
  */
 
-const WIX_API_KEY = import.meta.env.VITE_WIX_API_KEY;
-const WIX_SITE_ID = import.meta.env.VITE_WIX_SITE_ID || '4f3f6cd3-5a96-4af7-a705-00a4feb6fb25';
+import { PRODUCTS } from '../data/products';
+
 const STORE_DOMAIN = import.meta.env.VITE_STORE_DOMAIN || 'thevektorstudio.com';
+
+/**
+ * Busca produtos dinâmicos vindos da API da Wix (Catalog V3)
+ * com fallback inteligente para os produtos base caso a API oscile
+ */
+export async function fetchWixProducts() {
+  try {
+    const res = await fetch('/api/products');
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status}`);
+    }
+    const data = await res.json();
+    if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+      return data.products;
+    }
+    return PRODUCTS;
+  } catch (error) {
+    console.warn('Usando catálogo fallback de contingência:', error.message);
+    return PRODUCTS;
+  }
+}
 
 export async function createCheckout(cartItems) {
   try {
@@ -17,9 +38,7 @@ export async function createCheckout(cartItems) {
       productId: item.product.id
     }));
 
-    // In a headless production setup, we can call Wix eCommerce Checkout API:
-    // POST https://www.wixapis.com/ecom/v1/checkouts
-    // If running in development or redirecting to the hosted domain:
+    // Redirect para o checkout seguro da loja Wix
     const hostedCheckoutUrl = `https://www.${STORE_DOMAIN}/cart`;
 
     return {
@@ -36,3 +55,4 @@ export async function createCheckout(cartItems) {
     };
   }
 }
+

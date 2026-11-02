@@ -10,10 +10,12 @@ import TrackOrderModal from './components/TrackOrderModal';
 import ContactModal from './components/ContactModal';
 import FAQModal from './components/FAQModal';
 import PolicyModal from './components/PolicyModal';
+import AuthModal from './components/AuthModal';
+import AccountModal from './components/AccountModal';
 import Footer from './components/Footer';
 import { PRODUCTS, CATEGORIES } from './data/products';
-import { createCheckout } from './services/wixClient';
-import { Sparkles, SlidersHorizontal, ArrowUpDown, Star, CheckCircle2, ShieldCheck, Flame } from 'lucide-react';
+import { createCheckout, fetchWixProducts } from './services/wixClient';
+import { Sparkles, SlidersHorizontal, ArrowUpDown, Star, CheckCircle2, ShieldCheck, Flame, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -26,8 +28,74 @@ export default function App() {
   const [isTrackOpen, setIsTrackOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [policyState, setPolicyState] = useState({ isOpen: false, tab: 'shipping' });
   const [checkoutNotification, setCheckoutNotification] = useState(false);
+
+  // Products from Wix Dynamic Catalog
+  const [productsList, setProductsList] = useState(PRODUCTS);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+  // User Authentication State
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('vektor_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Fetch Wix Catalog on Mount
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingProducts(true);
+
+    fetchWixProducts()
+      .then((items) => {
+        if (isMounted && Array.isArray(items) && items.length > 0) {
+          setProductsList(items);
+        }
+      })
+      .catch((err) => {
+        console.warn('Erro ao carregar catálogo Wix:', err);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingProducts(false);
+      });
+
+    return () => { isMounted = false; };
+  }, []);
+
+  // Save User to LocalStorage
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    try {
+      localStorage.setItem('vektor_user', JSON.stringify(userData));
+    } catch (e) {
+      console.error('Failed to save user in storage:', e);
+    }
+  };
+
+  const handleUpdateUser = (updatedData) => {
+    setUser(updatedData);
+    try {
+      localStorage.setItem('vektor_user', JSON.stringify(updatedData));
+    } catch (e) {
+      console.error('Failed to update user in storage:', e);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    try {
+      localStorage.removeItem('vektor_user');
+    } catch (e) {
+      console.error('Failed to remove user from storage:', e);
+    }
+    setIsAccountOpen(false);
+  };
 
   // Cart state with localStorage
   const [cartItems, setCartItems] = useState(() => {
@@ -92,7 +160,7 @@ export default function App() {
 
   // Filtered & Sorted products
   const filteredProducts = useMemo(() => {
-    return PRODUCTS.filter((p) => {
+    return productsList.filter((p) => {
       // Category filter
       if (selectedCategory === 'sale' && !p.isSale) return false;
       if (selectedCategory !== 'all' && selectedCategory !== 'sale' && p.category !== selectedCategory) {
@@ -101,9 +169,9 @@ export default function App() {
       // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const matchName = p.name.toLowerCase().includes(query);
-        const matchDesc = p.description.toLowerCase().includes(query);
-        const matchCat = p.categoryLabel.toLowerCase().includes(query);
+        const matchName = (p.name || '').toLowerCase().includes(query);
+        const matchDesc = (p.description || '').toLowerCase().includes(query);
+        const matchCat = (p.categoryLabel || '').toLowerCase().includes(query);
         if (!matchName && !matchDesc && !matchCat) return false;
       }
       return true;
@@ -113,7 +181,7 @@ export default function App() {
       if (sortBy === 'rating') return b.rating - a.rating;
       return 0; // featured default
     });
-  }, [selectedCategory, searchQuery, sortBy]);
+  }, [productsList, selectedCategory, searchQuery, sortBy]);
 
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -136,6 +204,9 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         wishlistCount={2}
+        user={user}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenAccount={() => setIsAccountOpen(true)}
       />
 
       {/* 3. Hero Banner */}
@@ -388,6 +459,23 @@ export default function App() {
         isOpen={policyState.isOpen}
         initialTab={policyState.tab}
         onClose={() => setPolicyState({ isOpen: false, tab: 'shipping' })}
+      />
+
+      {/* Auth Modal (Sign In / Create Account personalizado) */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Account & Profile Modal (Foto, Nome, Endereço de Entrega, Meus Pedidos) */}
+      <AccountModal
+        isOpen={isAccountOpen}
+        onClose={() => setIsAccountOpen(false)}
+        user={user}
+        onUpdateUser={handleUpdateUser}
+        onLogout={handleLogout}
+        onOpenTrack={() => setIsTrackOpen(true)}
       />
 
       {/* Checkout Success Simulated Notification */}
