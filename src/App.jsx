@@ -12,6 +12,7 @@ import FAQModal from './components/FAQModal';
 import PolicyModal from './components/PolicyModal';
 import Footer from './components/Footer';
 import { PRODUCTS, CATEGORIES } from './data/products';
+import { createCheckout } from './services/wixClient';
 import { Sparkles, SlidersHorizontal, ArrowUpDown, Star, CheckCircle2, ShieldCheck, Flame } from 'lucide-react';
 
 export default function App() {
@@ -78,13 +79,15 @@ export default function App() {
     setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setCheckoutNotification(true);
+    const result = await createCheckout(cartItems);
     setTimeout(() => {
       setCheckoutNotification(false);
-      setCartItems([]);
-      setIsCartOpen(false);
-    }, 3500);
+      if (result && result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+      }
+    }, 1800);
   };
 
   // Filtered & Sorted products
