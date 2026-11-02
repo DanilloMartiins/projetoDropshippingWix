@@ -26,6 +26,8 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeProductModal, setActiveProductModal] = useState(null);
   const [isTrackOpen, setIsTrackOpen] = useState(false);
+  const [trackSource, setTrackSource] = useState(null); // 'account' | null
+  const [activeTrackingCode, setActiveTrackingCode] = useState('');
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -545,7 +547,18 @@ export default function App() {
       {/* Track Your Order Modal */}
       <TrackOrderModal
         isOpen={isTrackOpen}
-        onClose={() => setIsTrackOpen(false)}
+        initialTrackingCode={activeTrackingCode}
+        onClose={() => {
+          setIsTrackOpen(false);
+          setTrackSource(null);
+          setActiveTrackingCode('');
+        }}
+        onBack={trackSource === 'account' ? () => {
+          setIsTrackOpen(false);
+          setTrackSource(null);
+          setActiveTrackingCode('');
+          setIsAccountOpen(true);
+        } : null}
       />
 
       {/* Contact Us Modal (With Sunday-to-Sunday 9AM-7PM EST hours) */}
@@ -585,7 +598,12 @@ export default function App() {
         user={user}
         onUpdateUser={handleUpdateUser}
         onLogout={handleLogout}
-        onOpenTrack={() => setIsTrackOpen(true)}
+        onOpenTrack={(code) => {
+          setIsAccountOpen(false);
+          setTrackSource('account');
+          setActiveTrackingCode(code || '');
+          setIsTrackOpen(true);
+        }}
       />
 
       {/* Floating Session Expired Toast / Notification */}

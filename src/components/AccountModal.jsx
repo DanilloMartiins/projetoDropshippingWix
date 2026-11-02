@@ -396,7 +396,7 @@ export default function AccountModal({
                     <button
                       onClick={() => {
                         onClose();
-                        if (onOpenTrack) onOpenTrack();
+                        if (onOpenTrack) onOpenTrack(order.trackingNumber);
                       }}
                       className="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                     >

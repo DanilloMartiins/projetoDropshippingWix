@@ -1,11 +1,34 @@
-import React, { useState } from 'react';
-import { X, Search, Package, CheckCircle2, Clock, Truck, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Search, Package, CheckCircle2, Clock, Truck, MapPin, ArrowLeft } from 'lucide-react';
 
-export default function TrackOrderModal({ isOpen, onClose }) {
+export default function TrackOrderModal({ isOpen, onClose, onBack, initialTrackingCode = '' }) {
   if (!isOpen) return null;
 
-  const [trackingCode, setTrackingCode] = useState('');
+  const [trackingCode, setTrackingCode] = useState(initialTrackingCode || '');
   const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (initialTrackingCode) {
+      setTrackingCode(initialTrackingCode);
+      // Auto-simula a busca com o código vindo do pedido
+      setResult({
+        code: initialTrackingCode.toUpperCase(),
+        carrier: 'USPS Priority Mail / Expedited',
+        status: 'In Transit - On Schedule',
+        origin: 'Fulfillment Center, Dayton, OH',
+        destination: 'United States',
+        estimatedDelivery: 'Thursday by 7:00 PM',
+        steps: [
+          { title: 'Order Confirmed & Payment Verified', time: 'Oct 30, 10:14 AM', done: true },
+          { title: 'Package Processed at Logistics Hub', time: 'Oct 31, 02:40 PM', done: true },
+          { title: 'In Transit to Regional Carrier Facility', time: 'Nov 02, 09:20 AM', current: true },
+          { title: 'Out for Delivery via Local USPS Courier', time: 'Estimated Soon', done: false }
+        ]
+      });
+    } else {
+      setResult(null);
+    }
+  }, [initialTrackingCode, isOpen]);
 
   const handleTrack = (e) => {
     e.preventDefault();
@@ -17,12 +40,12 @@ export default function TrackOrderModal({ isOpen, onClose }) {
       carrier: 'USPS Priority Mail / Expedited',
       status: 'In Transit - On Schedule',
       origin: 'Fulfillment Center, Dayton, OH',
-      destination: 'Austin, TX (United States)',
+      destination: 'United States',
       estimatedDelivery: 'Thursday by 7:00 PM',
       steps: [
-        { title: 'Order Confirmed & Payment Verified', time: 'Oct 29, 10:14 AM', done: true },
-        { title: 'Package Processed at Logistics Hub', time: 'Oct 30, 02:40 PM', done: true },
-        { title: 'In Transit to Regional Carrier Facility', time: 'Nov 01, 09:20 AM', current: true },
+        { title: 'Order Confirmed & Payment Verified', time: 'Oct 30, 10:14 AM', done: true },
+        { title: 'Package Processed at Logistics Hub', time: 'Oct 31, 02:40 PM', done: true },
+        { title: 'In Transit to Regional Carrier Facility', time: 'Nov 02, 09:20 AM', current: true },
         { title: 'Out for Delivery via Local USPS Courier', time: 'Estimated Soon', done: false }
       ]
     });
@@ -34,9 +57,24 @@ export default function TrackOrderModal({ isOpen, onClose }) {
         className="relative w-full max-w-xl rounded-3xl bg-[#0F1626] border border-slate-700/80 shadow-2xl p-6 sm:p-8 space-y-6 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Back Button (Retorna para a tela/perfil anterior) */}
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="absolute top-4 left-4 p-2 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold cursor-pointer z-10"
+            title="Back to previous screen"
+          >
+            <ArrowLeft className="w-4 h-4 text-cyan-400" />
+            <span>Back</span>
+          </button>
+        )}
+
+        {/* Close Button (Fecha tudo) */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer z-10"
+          aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
