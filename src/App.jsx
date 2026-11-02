@@ -33,6 +33,11 @@ export default function App() {
   const [policyState, setPolicyState] = useState({ isOpen: false, tab: 'shipping' });
   const [checkoutNotification, setCheckoutNotification] = useState(false);
 
+  // Inactivity & Auth Notices
+  const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos de inatividade
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState(false);
+  const [authNotice, setAuthNotice] = useState('');
+
   // Products from Wix Dynamic Catalog
   const [productsList, setProductsList] = useState(PRODUCTS);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
@@ -41,11 +46,71 @@ export default function App() {
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem('vektor_user');
+      const lastActivity = localStorage.getItem('vektor_last_activity');
+      if (savedUser && lastActivity) {
+        // Se passou mais de 15 minutos desde o último uso, expira na hora
+        if (Date.now() - parseInt(lastActivity, 10) > INACTIVITY_TIMEOUT_MS) {
+          localStorage.removeItem('vektor_user');
+          localStorage.removeItem('vektor_last_activity');
+          return null;
+        }
+      }
       return savedUser ? JSON.parse(savedUser) : null;
     } catch {
       return null;
     }
   });
+
+  // Função auxiliar para carregar o carrinho correspondente à conta ativa
+  const loadUserCart = (currentUser) => {
+    try {
+      if (currentUser && currentUser.email) {
+        const key = `vektor_cart_${currentUser.email.toLowerCase()}`;
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : [];
+      } else {
+        // Sem conta logada: lê o carrinho temporário do visitante (se houver)
+        const guest = localStorage.getItem('vektor_cart_guest');
+        return guest ? JSON.parse(guest) : [];
+      }
+    } catch {
+      return [];
+    }
+  };
+
+  // Cart state inicializado estritamente para o usuário atual
+  const [cartItems, setCartItems] = useState(() => loadUserCart(user));
+
+  // Timeout de 15 minutos de inatividade
+  useEffect(() => {
+    if (!user) return;
+
+    let timeoutId;
+
+    const resetInactivityTimer = () => {
+      try {
+        localStorage.setItem('vektor_last_activity', Date.now().toString());
+      } catch {}
+
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        // Auto-logout após 15 minutos sem interação
+        handleLogout();
+        setSessionExpiredNotice(true);
+        setTimeout(() => setSessionExpiredNotice(false), 7000);
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    // Monitora cliques, teclas, toques e rolagem do usuário
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach((evt) => window.addEventListener(evt, resetInactivityTimer, { passive: true }));
+    resetInactivityTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      activityEvents.forEach((evt) => window.removeEventListener(evt, resetInactivityTimer));
+    };
+  }, [user]);
 
   // Fetch Wix Catalog on Mount
   useEffect(() => {
@@ -68,14 +133,60 @@ export default function App() {
     return () => { isMounted = false; };
   }, []);
 
-  // Save User to LocalStorage
+  // Salvar alterações no carrinho na chave correta (por e-mail ou guest)
+  useEffect(() => {
+    try {
+      if (user && user.email) {
+        const key = `vektor_cart_${user.email.toLowerCase()}`;
+        localStorage.setItem(key, JSON.stringify(cartItems));
+      } else {
+        localStorage.setItem('vektor_cart_guest', JSON.stringify(cartItems));
+      }
+    } catch (e) {
+      console.error('Failed to save cart to localStorage', e);
+    }
+  }, [cartItems, user]);
+
+  // Login com migração de itens e persistência individual
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     try {
       localStorage.setItem('vektor_user', JSON.stringify(userData));
+      localStorage.setItem('vektor_last_activity', Date.now().toString());
+
+      const userCartKey = `vektor_cart_${userData.email.toLowerCase()}`;
+      const savedUserCartStr = localStorage.getItem(userCartKey);
+      const savedUserCart = savedUserCartStr ? JSON.parse(savedUserCartStr) : [];
+
+      // Itens que o visitante colocou no carrinho antes de logar
+      const guestCartStr = localStorage.getItem('vektor_cart_guest');
+      const guestCart = guestCartStr ? JSON.parse(guestCartStr) : [];
+
+      if (guestCart.length > 0) {
+        // Une o carrinho de visitante ao carrinho da conta
+        const mergedMap = new Map();
+        savedUserCart.forEach((item) => mergedMap.set(item.product.id, item));
+        guestCart.forEach((item) => {
+          if (mergedMap.has(item.product.id)) {
+            const cur = mergedMap.get(item.product.id);
+            mergedMap.set(item.product.id, { ...cur, quantity: cur.quantity + item.quantity });
+          } else {
+            mergedMap.set(item.product.id, item);
+          }
+        });
+        const finalCart = Array.from(mergedMap.values());
+        localStorage.setItem(userCartKey, JSON.stringify(finalCart));
+        localStorage.removeItem('vektor_cart_guest');
+        setCartItems(finalCart);
+      } else {
+        // Carrega exatamente o carrinho que pertencia a essa conta
+        setCartItems(savedUserCart);
+      }
     } catch (e) {
-      console.error('Failed to save user in storage:', e);
+      console.error('Failed to sync cart on login:', e);
     }
+    setIsAuthOpen(false);
+    setAuthNotice('');
   };
 
   const handleUpdateUser = (updatedData) => {
@@ -87,33 +198,19 @@ export default function App() {
     }
   };
 
+  // Logout com limpeza total de carrinho da sessão
   const handleLogout = () => {
     setUser(null);
     try {
       localStorage.removeItem('vektor_user');
+      localStorage.removeItem('vektor_last_activity');
+      localStorage.removeItem('vektor_cart_guest');
     } catch (e) {
       console.error('Failed to remove user from storage:', e);
     }
+    setCartItems([]); // Carrinho da tela zerado imediatamente!
     setIsAccountOpen(false);
   };
-
-  // Cart state with localStorage
-  const [cartItems, setCartItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem('vektor_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('vektor_cart', JSON.stringify(cartItems));
-    } catch (e) {
-      console.error('Failed to save cart to localStorage', e);
-    }
-  }, [cartItems]);
 
   // Cart operations
   const handleAddToCart = (product, quantity = 1) => {
@@ -147,7 +244,16 @@ export default function App() {
     setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
   };
 
+  // Checkout com bloqueio para usuários sem conta (antifraude)
   const handleCheckout = async () => {
+    // Se não estiver logado, bloqueia a ida ao pagamento e exige login/conta
+    if (!user) {
+      setIsCartOpen(false);
+      setAuthNotice('For fraud prevention and secure USPS tracking, please sign in or create an account to proceed with your order.');
+      setIsAuthOpen(true);
+      return;
+    }
+
     setCheckoutNotification(true);
     const result = await createCheckout(cartItems);
     setTimeout(() => {
@@ -464,8 +570,12 @@ export default function App() {
       {/* Auth Modal (Sign In / Create Account personalizado) */}
       <AuthModal
         isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
+        onClose={() => {
+          setIsAuthOpen(false);
+          setAuthNotice('');
+        }}
         onLoginSuccess={handleLoginSuccess}
+        noticeMessage={authNotice}
       />
 
       {/* Account & Profile Modal (Foto, Nome, Endereço de Entrega, Meus Pedidos) */}
@@ -477,6 +587,19 @@ export default function App() {
         onLogout={handleLogout}
         onOpenTrack={() => setIsTrackOpen(true)}
       />
+
+      {/* Floating Session Expired Toast / Notification */}
+      {sessionExpiredNotice && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#0F1626] border border-cyan-500/60 shadow-2xl shadow-cyan-950/80 rounded-2xl p-4 max-w-sm flex items-start gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <p className="font-bold text-white">Session Timed Out</p>
+            <p className="text-slate-400 mt-0.5 leading-relaxed">
+              For your account security, you were signed out after 15 minutes of inactivity.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Checkout Success Simulated Notification */}
       {checkoutNotification && (

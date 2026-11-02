@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, ShieldCheck, ArrowRight, Eye, EyeOff, Sparkles, CheckCircle } from 'lucide-react';
 
-export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
+export default function AuthModal({ isOpen, onClose, onLoginSuccess, noticeMessage = '' }) {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'forgot'
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -84,6 +84,14 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
             {mode === 'forgot' && 'Enter your email to receive recovery instructions'}
           </p>
         </div>
+
+        {/* Notice Message (ex: vindo do checkout) */}
+        {noticeMessage && (
+          <div className="mb-5 p-3.5 bg-cyan-950/60 border border-cyan-500/40 rounded-xl text-cyan-300 text-xs flex items-start gap-2.5 shadow-lg shadow-cyan-950/50">
+            <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{noticeMessage}</span>
+          </div>
+        )}
 
         {/* Tabs Sign In / Create Account */}
         {mode !== 'forgot' && (
