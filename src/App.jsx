@@ -12,6 +12,7 @@ import FAQModal from './components/FAQModal';
 import PolicyModal from './components/PolicyModal';
 import AuthModal from './components/AuthModal';
 import AccountModal from './components/AccountModal';
+import OrderSuccessModal from './components/OrderSuccessModal';
 import Footer from './components/Footer';
 import { PRODUCTS, CATEGORIES } from './data/products';
 import { createCheckout, fetchWixProducts } from './services/wixClient';
@@ -32,6 +33,7 @@ export default function App() {
   const [isFaqOpen, setIsFaqOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [policyState, setPolicyState] = useState({ isOpen: false, tab: 'shipping' });
   const [checkoutNotification, setCheckoutNotification] = useState(false);
 
@@ -148,6 +150,16 @@ export default function App() {
       console.error('Failed to save cart to localStorage', e);
     }
   }, [cartItems, user]);
+
+  // Verifica se retornou de pagamento concluído
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment_success') === 'true') {
+      setIsSuccessOpen(true);
+      setCartItems([]);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Login com migração de itens e persistência individual
   const handleLoginSuccess = (userData) => {
@@ -317,8 +329,10 @@ export default function App() {
         onOpenAccount={() => setIsAccountOpen(true)}
       />
 
-      {/* 3. Hero Banner */}
+      {/* 3. Hero Banner (com o produto real da Wix em destaque) */}
       <Hero
+        featuredProduct={productsList.find(p => p.name?.toLowerCase().includes('hood') || p.name?.toLowerCase().includes('speaker')) || productsList[0]}
+        onQuickView={setActiveProductModal}
         onExploreCategory={(catId) => {
           setSelectedCategory(catId);
           document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -602,6 +616,18 @@ export default function App() {
           setIsAccountOpen(false);
           setTrackSource('account');
           setActiveTrackingCode(code || '');
+          setIsTrackOpen(true);
+        }}
+      />
+
+      {/* Order Success & Confirmed Modal */}
+      <OrderSuccessModal
+        isOpen={isSuccessOpen}
+        onClose={() => setIsSuccessOpen(false)}
+        onTrackOrder={(orderCode) => {
+          setIsSuccessOpen(false);
+          setTrackSource('account');
+          setActiveTrackingCode(orderCode || '');
           setIsTrackOpen(true);
         }}
       />

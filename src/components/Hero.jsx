@@ -1,7 +1,20 @@
 import React from 'react';
 import { ArrowRight, Sparkles, ShieldCheck, Zap, Star } from 'lucide-react';
 
-export default function Hero({ onExploreCategory }) {
+export default function Hero({ onExploreCategory, featuredProduct, onQuickView }) {
+  const displayProduct = featuredProduct || {
+    name: 'Portable Desktop Range Hood Smoke Remover',
+    categoryLabel: 'Smart Kitchen',
+    price: 106.00,
+    compareAtPrice: 153.70,
+    badge: 'HOT TREND',
+    images: ['https://static.wixstatic.com/media/eca2ba_5d7d789adc3a42aabbdac3c1672b6705~mv2.png']
+  };
+
+  const discountPercent = displayProduct.compareAtPrice
+    ? Math.round(((displayProduct.compareAtPrice - displayProduct.price) / displayProduct.compareAtPrice) * 100)
+    : 31;
+
   return (
     <section className="relative overflow-hidden pt-12 pb-20 lg:pt-16 lg:pb-28 border-b border-brand-border">
       {/* Background ambient lighting glows */}
@@ -76,25 +89,35 @@ export default function Hero({ onExploreCategory }) {
             <div className="relative mx-auto max-w-md lg:max-w-none">
               
               {/* Main featured product card */}
-              <div className="rounded-3xl p-1 bg-gradient-to-b from-[#00E5FF]/40 via-slate-800 to-transparent shadow-2xl shadow-cyan-950/50">
+              <div 
+                className="rounded-3xl p-1 bg-gradient-to-b from-[#00E5FF]/40 via-slate-800 to-transparent shadow-2xl shadow-cyan-950/50 cursor-pointer group"
+                onClick={() => onQuickView && onQuickView(displayProduct)}
+              >
                 <div className="rounded-[22px] bg-[#0A0F1D] p-5 border border-slate-800 space-y-4">
-                  <div className="relative overflow-hidden rounded-2xl aspect-[4/3] bg-slate-900 group">
+                  <div className="relative overflow-hidden rounded-2xl aspect-[4/3] bg-slate-900">
                     <img 
-                      src="https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=800&auto=format&fit=crop&q=80" 
-                      alt="UltraBlend Pro Portable Blender" 
+                      src={displayProduct.images[0]} 
+                      alt={displayProduct.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute top-3 left-3 bg-red-500/90 backdrop-blur-sm text-white text-[11px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                      38% OFF
+                      {discountPercent > 0 ? `${discountPercent}% OFF` : 'DEAL'}
                     </div>
-                    <div className="absolute bottom-3 left-3 right-3 bg-[#080C14]/85 backdrop-blur-md p-3 rounded-xl border border-white/10 flex items-center justify-between">
-                      <div>
-                        <p className="text-[11px] text-[#00E5FF] font-bold uppercase tracking-wider">Kitchen Hero</p>
-                        <p className="text-xs font-semibold text-white">UltraBlend Pro 6-Blade</p>
+                    {displayProduct.badge && (
+                      <div className="absolute top-3 right-3 bg-cyan-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
+                        {displayProduct.badge}
                       </div>
-                      <div className="text-right">
-                        <span className="text-xs text-slate-400 line-through mr-1">$69.99</span>
-                        <span className="text-sm font-extrabold text-[#00E5FF]">$42.99</span>
+                    )}
+                    <div className="absolute bottom-3 left-3 right-3 bg-[#080C14]/85 backdrop-blur-md p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <p className="text-[10px] text-[#00E5FF] font-bold uppercase tracking-wider">{displayProduct.categoryLabel || 'Featured Tech'}</p>
+                        <p className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-xs">{displayProduct.name}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {displayProduct.compareAtPrice && (
+                          <span className="text-xs text-slate-400 line-through mr-1">${displayProduct.compareAtPrice.toFixed(2)}</span>
+                        )}
+                        <span className="text-sm font-extrabold text-[#00E5FF]">${displayProduct.price.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -103,11 +126,11 @@ export default function Hero({ onExploreCategory }) {
                   <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
                     <div className="flex items-center gap-1.5 bg-[#0F1626] p-2 rounded-lg border border-slate-800">
                       <Zap className="w-3.5 h-3.5 text-[#00E5FF]" />
-                      <span>22,000 RPM Motor</span>
+                      <span>USPS 3-7 Day Delivery</span>
                     </div>
                     <div className="flex items-center gap-1.5 bg-[#0F1626] p-2 rounded-lg border border-slate-800">
-                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                      <span>USB-C Fast Charge</span>
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>30-Day Money-Back</span>
                     </div>
                   </div>
                 </div>
