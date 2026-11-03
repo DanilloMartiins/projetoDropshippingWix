@@ -38,23 +38,20 @@ export async function createCheckout(cartItems, buyerEmail = '') {
       body: JSON.stringify({ cartItems, buyerEmail })
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.checkoutUrl) {
-        return data;
-      }
+    const data = await res.json();
+    if (res.ok && data.success && data.checkoutUrl) {
+      return data;
     }
 
-    // Fallback padrão para o carrinho hospedado
     return {
-      success: true,
-      checkoutUrl: `https://www.${STORE_DOMAIN}/cart`
+      success: false,
+      error: data.error || 'Failed to initiate checkout session'
     };
   } catch (error) {
-    console.warn('Erro ao chamar /api/checkout, usando fallback:', error.message);
+    console.error('Erro ao chamar /api/checkout:', error);
     return {
-      success: true,
-      checkoutUrl: `https://www.${STORE_DOMAIN}/cart`
+      success: false,
+      error: error.message
     };
   }
 }

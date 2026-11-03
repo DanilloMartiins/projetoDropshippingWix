@@ -60,67 +60,25 @@ export default async function handler(req, res) {
             checkoutUrl: stripeData.url
           });
         }
+      } else {
+        const stripeErr = await stripeRes.json();
+        console.warn('Stripe checkout error:', stripeErr);
+        return res.status(400).json({
+          success: false,
+          error: stripeErr.error?.message || 'Stripe account pending verification. Please try again soon.'
+        });
       }
     } catch (e) {
-      console.warn('Aguardando liberação de métodos da Stripe, usando fallback:', e.message);
+      console.warn('Erro ao chamar Stripe:', e.message);
+      return res.status(500).json({
+        success: false,
+        error: e.message
+      });
     }
   }
 
-  // 2. Integração com Wix eCommerce Checkout
-  if (apiKey && siteId) {
-    const headers = {
-      'Authorization': apiKey,
-      'wix-site-id': siteId,
-      'Content-Type': 'application/json'
-    };
-
-    try {
-      const lineItems = cartItems.map(item => {
-        const p = item.product;
-        if (p.id && p.id.includes('-')) {
-          return {
-            quantity: item.quantity,
-            catalogReference: {
-              appId: '215238eb-22a5-4c36-9e7b-e7c08025e04e',
-              catalogItemId: p.id
-            }
-          };
-        }
-        return null;
-      }).filter(Boolean);
-
-      if (lineItems.length > 0) {
-        const checkoutPayload = {
-          channelType: 'WEB',
-          lineItems
-        };
-
-        const wixRes = await fetch('https://www.wixapis.com/ecom/v1/checkouts', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(checkoutPayload)
-        });
-
-        if (wixRes.ok) {
-          const checkoutData = await wixRes.json();
-          const checkoutId = checkoutData.checkout?.id;
-
-          return res.status(200).json({
-            success: true,
-            provider: 'wix',
-            checkoutId,
-            checkoutUrl: `https://www.${storeDomain}/?payment_success=true&order_id=${checkoutId}`
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Erro na chamada da Wix:', error);
-    }
-  }
-
-  // Fallback padrão
-  return res.status(200).json({
-    success: true,
-    checkoutUrl: `https://www.${storeDomain}/?payment_success=true`
+  return res.status(400).json({
+    success: false,
+    error: 'Payment gateway configuration pending. Please contact support.'
   });
 }

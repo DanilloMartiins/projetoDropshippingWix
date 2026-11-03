@@ -16,7 +16,7 @@ import OrderSuccessModal from './components/OrderSuccessModal';
 import Footer from './components/Footer';
 import { PRODUCTS, CATEGORIES } from './data/products';
 import { createCheckout, fetchWixProducts } from './services/wixClient';
-import { Sparkles, SlidersHorizontal, ArrowUpDown, Star, CheckCircle2, ShieldCheck, Flame, RefreshCw } from 'lucide-react';
+import { Sparkles, SlidersHorizontal, ArrowUpDown, Star, CheckCircle2, ShieldCheck, Flame, RefreshCw, AlertCircle, X as CloseIcon } from 'lucide-react';
 
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -36,6 +36,7 @@ export default function App() {
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [policyState, setPolicyState] = useState({ isOpen: false, tab: 'shipping' });
   const [checkoutNotification, setCheckoutNotification] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
   // Inactivity & Auth Notices
   const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos de inatividade
@@ -269,13 +270,16 @@ export default function App() {
     }
 
     setCheckoutNotification(true);
+    setCheckoutError('');
     const result = await createCheckout(cartItems, user?.email);
     setTimeout(() => {
       setCheckoutNotification(false);
-      if (result && result.checkoutUrl) {
+      if (result && result.success && result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
+      } else {
+        setCheckoutError(result?.error || 'Stripe account pending identity verification. Credit card processing will be enabled once approved.');
       }
-    }, 1800);
+    }, 1500);
   };
 
   // Filtered & Sorted products
@@ -642,6 +646,23 @@ export default function App() {
               For your account security, you were signed out after 15 minutes of inactivity.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Floating Payment / Stripe Notice Toast */}
+      {checkoutError && (
+        <div className="fixed bottom-6 left-6 z-50 bg-[#141824] border border-amber-500/60 shadow-2xl shadow-amber-950/80 rounded-2xl p-4 max-w-md flex items-start gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-xs flex-1">
+            <p className="font-bold text-white">Payment Processing Notice</p>
+            <p className="text-slate-300 mt-1 leading-relaxed">{checkoutError}</p>
+          </div>
+          <button 
+            onClick={() => setCheckoutError('')}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <CloseIcon className="w-4 h-4" />
+          </button>
         </div>
       )}
 

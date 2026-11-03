@@ -23,30 +23,92 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, noticeMessa
 
     setTimeout(() => {
       setLoading(false);
+      const cleanEmail = email.trim().toLowerCase();
+
+      // Recupera banco de usuários cadastrados
+      let usersDb = {};
+      try {
+        const saved = localStorage.getItem('vektor_users_db');
+        usersDb = saved ? JSON.parse(saved) : {};
+      } catch {
+        usersDb = {};
+      }
+
+      // 1. MODO ESQUECI A SENHA
       if (mode === 'forgot') {
-        setSuccessMsg(`Password reset instructions sent to ${email}`);
+        if (!usersDb[cleanEmail]) {
+          setErrorMsg('No account found with this email address.');
+          return;
+        }
+        setSuccessMsg(`Password reset instructions sent to ${cleanEmail}`);
         return;
       }
 
-      // Simulação bem sucedida com persistência
-      const userData = {
-        name: mode === 'signup' ? name : (name || email.split('@')[0]),
-        email: email,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-        joinedDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-        shippingAddress: {
-          street: '742 Evergreen Terrace',
-          suite: 'Apt 4B',
-          city: 'Springfield',
-          state: 'OR',
-          zip: '97477',
-          country: 'United States'
+      // 2. MODO CADASTRO (CREATE ACCOUNT)
+      if (mode === 'signup') {
+        if (!name.trim()) {
+          setErrorMsg('Please enter your full name.');
+          return;
         }
-      };
+        if (password.length < 6) {
+          setErrorMsg('Password must be at least 6 characters long.');
+          return;
+        }
+        if (usersDb[cleanEmail]) {
+          setErrorMsg('An account with this email already exists. Please Sign In instead.');
+          return;
+        }
 
-      onLoginSuccess(userData);
-      onClose();
-    }, 900);
+        // Cria e salva novo usuário
+        const newUser = {
+          name: name.trim(),
+          email: cleanEmail,
+          password: password, // Armazenado localmente para validação
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+          joinedDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+          shippingAddress: {
+            street: '',
+            suite: '',
+            city: '',
+            state: '',
+            zip: '',
+            country: 'United States'
+          }
+        };
+
+        usersDb[cleanEmail] = newUser;
+        try {
+          localStorage.setItem('vektor_users_db', JSON.stringify(usersDb));
+        } catch (err) {
+          console.error('Failed to save user db:', err);
+        }
+
+        onLoginSuccess(newUser);
+        onClose();
+        return;
+      }
+
+      // 3. MODO LOGIN (SIGN IN)
+      if (mode === 'signin') {
+        const existingUser = usersDb[cleanEmail];
+
+        // Se o usuário não existir
+        if (!existingUser) {
+          setErrorMsg('Account not found. Please click "Create Account" above to register.');
+          return;
+        }
+
+        // Se a senha estiver errada
+        if (existingUser.password !== password) {
+          setErrorMsg('Incorrect password. Please verify your password and try again.');
+          return;
+        }
+
+        // Login com sucesso
+        onLoginSuccess(existingUser);
+        onClose();
+      }
+    }, 600);
   };
 
   return (
