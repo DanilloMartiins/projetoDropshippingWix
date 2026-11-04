@@ -16,59 +16,42 @@ export default function AccountModal({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Profile fields
-  const [name, setName] = useState(user?.name || 'Danillo Martins');
-  const [email] = useState(user?.email || 'customer@thevektorstudio.com');
-  const [phone, setPhone] = useState(user?.phone || '+1 (555) 234-8901');
+  // Profile fields sincronizados com o user real
+  const [name, setName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [avatar, setAvatar] = useState(user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80');
 
-  // Address fields (padrão americano)
+  // Address fields sincronizados com o user real
   const [address, setAddress] = useState(user?.shippingAddress || {
-    street: '742 Evergreen Terrace',
-    suite: 'Apt 4B',
-    city: 'Springfield',
-    state: 'OR',
-    zip: '97477',
+    street: '',
+    suite: '',
+    city: '',
+    state: '',
+    zip: '',
     country: 'United States'
   });
 
-  // Pedidos simulados vinculados à conta do cliente
-  const [orders] = useState([
-    {
-      id: 'VS-849201-US',
-      date: 'Oct 30, 2026',
-      total: 106.00,
-      status: 'In Transit',
-      trackingNumber: '9400111899562537638421',
-      carrier: 'USPS Priority Mail',
-      estimatedDelivery: 'Nov 04, 2026',
-      items: [
-        {
-          name: 'Portable Desktop Range Hood Smoke Remover',
-          quantity: 1,
-          price: 106.00,
-          image: 'https://static.wixstatic.com/media/eca2ba_5d7d789adc3a42aabbdac3c1672b6705~mv2.png'
-        }
-      ]
-    },
-    {
-      id: 'VS-712034-US',
-      date: 'Oct 15, 2026',
-      total: 47.07,
-      status: 'Delivered',
-      trackingNumber: '9400111899561029384712',
-      carrier: 'USPS Ground Advantage',
-      estimatedDelivery: 'Oct 19, 2026',
-      items: [
-        {
-          name: 'Infrared Non-Contact Forehead Thermometer For Kids',
-          quantity: 1,
-          price: 47.07,
-          image: 'https://static.wixstatic.com/media/eca2ba_6178fc2d62a748d29a6cdb0437f8491b~mv2.jpeg'
-        }
-      ]
+  // Atualiza estados locais sempre que o user mudar ou o modal abrir
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setPhone(user.phone || '');
+      setAvatar(user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80');
+      if (user.shippingAddress) {
+        setAddress({
+          street: user.shippingAddress.street || '',
+          suite: user.shippingAddress.suite || user.shippingAddress.apt || '',
+          city: user.shippingAddress.city || '',
+          state: user.shippingAddress.state || '',
+          zip: user.shippingAddress.zip || '',
+          country: user.shippingAddress.country || 'United States'
+        });
+      }
     }
-  ]);
+  }, [user, isOpen]);
+
+  // Pedidos reais vinculados à conta do cliente
+  const orders = user?.orders || [];
 
   if (!isOpen) return null;
 
@@ -150,7 +133,7 @@ export default function AccountModal({
               </div>
               <p className="text-xs text-slate-400 mt-1 flex items-center justify-center sm:justify-start gap-1">
                 <Mail className="w-3.5 h-3.5 text-cyan-400" />
-                {email}
+                {user?.email || 'No email registered'}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
                 Member of Vektor Studio USA • Synced with Wix Members
@@ -236,7 +219,7 @@ export default function AccountModal({
                   <input
                     type="email"
                     disabled
-                    value={email}
+                    value={user?.email || ''}
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-slate-800/80 rounded-xl text-sm text-slate-400 cursor-not-allowed"
                   />
                 </div>
@@ -347,65 +330,73 @@ export default function AccountModal({
           {/* TAB 3: ORDERS & TRACKING */}
           {activeTab === 'orders' && (
             <div className="space-y-4">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/40 transition-colors"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800/60 text-xs">
-                    <div>
-                      <span className="text-slate-400">Order ID: </span>
-                      <span className="font-mono font-bold text-cyan-400">{order.id}</span>
-                      <span className="text-slate-500 ml-2">• {order.date}</span>
-                    </div>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        order.status === 'Delivered'
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 animate-pulse'
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </div>
-
-                  {/* Itens do pedido */}
-                  <div className="py-3 space-y-3">
-                    {order.items.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-3">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-12 h-12 rounded-lg object-cover bg-slate-900 border border-slate-800 shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-white truncate">{item.name}</p>
-                          <p className="text-[11px] text-slate-400">Qty: {item.quantity} • ${item.price.toFixed(2)}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Informações de Rastreio */}
-                  <div className="pt-3 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <Truck className="w-4 h-4 text-cyan-400 shrink-0" />
-                      <span>{order.carrier} • Tracking: <span className="font-mono text-slate-300">{order.trackingNumber.slice(0, 10)}...</span></span>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        onClose();
-                        if (onOpenTrack) onOpenTrack(order.trackingNumber);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <span>Track Package</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+              {orders.length === 0 ? (
+                <div className="py-12 text-center text-slate-400">
+                  <Package className="w-12 h-12 mx-auto text-slate-600 mb-3" />
+                  <p className="text-sm font-semibold text-slate-200">No Orders Yet</p>
+                  <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Once you complete a purchase, your USPS priority tracking will appear here.</p>
                 </div>
-              ))}
+              ) : (
+                orders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/40 transition-colors"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800/60 text-xs">
+                      <div>
+                        <span className="text-slate-400">Order ID: </span>
+                        <span className="font-mono font-bold text-cyan-400">{order.id}</span>
+                        <span className="text-slate-500 ml-2">• {order.date}</span>
+                      </div>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          order.status === 'Delivered'
+                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 animate-pulse'
+                        }`}
+                      >
+                        {order.status}
+                      </span>
+                    </div>
+
+                    {/* Itens do pedido */}
+                    <div className="py-3 space-y-3">
+                      {order.items?.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-12 h-12 rounded-lg object-cover bg-slate-900 border border-slate-800 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-white truncate">{item.name}</p>
+                            <p className="text-[11px] text-slate-400">Qty: {item.quantity} • ${item.price?.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Informações de Rastreio */}
+                    <div className="pt-3 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <Truck className="w-4 h-4 text-cyan-400 shrink-0" />
+                        <span>{order.carrier} • Tracking: <span className="font-mono text-slate-300">{order.trackingNumber?.slice(0, 10)}...</span></span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          onClose();
+                          if (onOpenTrack) onOpenTrack(order.trackingNumber);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <span>Track Package</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>
