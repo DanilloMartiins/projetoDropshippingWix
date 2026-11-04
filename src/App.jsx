@@ -202,12 +202,35 @@ export default function App() {
     }
     setIsAuthOpen(false);
     setAuthNotice('');
+
+    // Sincroniza silenciosamente em background com o banco de dados da Wix (sem travar a tela)
+    try {
+      fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: userData })
+      }).catch(() => {});
+    } catch (_) {}
   };
 
   const handleUpdateUser = (updatedData) => {
     setUser(updatedData);
     try {
       localStorage.setItem('vektor_user', JSON.stringify(updatedData));
+      const usersDbRaw = localStorage.getItem('vektor_users_db');
+      if (usersDbRaw) {
+        const usersDb = JSON.parse(usersDbRaw);
+        if (updatedData.email && usersDb[updatedData.email]) {
+          usersDb[updatedData.email] = { ...usersDb[updatedData.email], ...updatedData };
+          localStorage.setItem('vektor_users_db', JSON.stringify(usersDb));
+        }
+      }
+      // Sincroniza silenciosamente em background com o banco de dados da Wix
+      fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: updatedData })
+      }).catch(() => {});
     } catch (e) {
       console.error('Failed to update user in storage:', e);
     }

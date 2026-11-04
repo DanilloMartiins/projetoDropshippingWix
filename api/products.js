@@ -13,6 +13,9 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Cache de borda na CDN da Vercel: 5 min de cache fresco + 1h de revalidacao em background
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=3600');
+
   const apiKey = process.env.VITE_WIX_API_KEY;
   const siteId = process.env.VITE_WIX_SITE_ID;
 
