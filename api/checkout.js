@@ -35,6 +35,8 @@ export default async function handler(req, res) {
       params.append('success_url', `https://www.${storeDomain}/?payment_success=true&session_id={CHECKOUT_SESSION_ID}`);
       params.append('cancel_url', `https://www.${storeDomain}/`);
       if (buyerEmail) params.append('customer_email', buyerEmail);
+      params.append('shipping_address_collection[allowed_countries][0]', 'US');
+      params.append('phone_number_collection[enabled]', 'true');
 
       cartItems.forEach((item, index) => {
         params.append(`line_items[${index}][price_data][currency]`, 'usd');
