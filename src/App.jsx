@@ -152,6 +152,19 @@ export default function App() {
     }
   }, [cartItems, user]);
 
+  // Limpeza de contas de teste antigas para migração ao banco oficial da Wix
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('vektor_wix_db_clean_v1')) {
+        localStorage.removeItem('vektor_users_db');
+        localStorage.removeItem('vektor_user');
+        localStorage.removeItem('vektor_cart_guest');
+        setUser(null);
+        localStorage.setItem('vektor_wix_db_clean_v1', 'true');
+      }
+    } catch (_) {}
+  }, []);
+
   // Verifica se retornou de pagamento concluído
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

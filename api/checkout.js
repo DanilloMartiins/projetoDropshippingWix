@@ -63,7 +63,8 @@ export default async function handler(req, res) {
                   method: 'POST',
                   headers: {
                     'Authorization': `Bearer ${stripeKey}`,
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Connection': 'keep-alive'
                   },
                   body: updateParams.toString()
                 });
@@ -95,7 +96,8 @@ export default async function handler(req, res) {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${stripeKey}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Connection': 'keep-alive'
               },
               body: createCustParams.toString()
             });
@@ -136,7 +138,8 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${stripeKey}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Connection': 'keep-alive'
         },
         body: params.toString()
       });

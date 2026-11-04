@@ -21,7 +21,8 @@ export default async function handler(req, res) {
   const headers = {
     'Authorization': apiKey,
     'wix-site-id': siteId,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Connection': 'keep-alive'
   };
 
   try {
