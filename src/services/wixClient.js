@@ -28,14 +28,17 @@ export async function fetchWixProducts() {
   }
 }
 
-export async function createCheckout(cartItems, buyerEmail = '') {
+export async function createCheckout(cartItems, userOrEmail = '') {
   try {
+    const buyerEmail = typeof userOrEmail === 'string' ? userOrEmail : (userOrEmail?.email || '');
+    const user = typeof userOrEmail === 'object' ? userOrEmail : null;
+
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ cartItems, buyerEmail })
+      body: JSON.stringify({ cartItems, buyerEmail, user })
     });
 
     const data = await res.json();

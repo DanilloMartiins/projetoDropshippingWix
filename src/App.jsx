@@ -271,7 +271,7 @@ export default function App() {
 
     setCheckoutNotification(true);
     setCheckoutError('');
-    const result = await createCheckout(cartItems, user?.email);
+    const result = await createCheckout(cartItems, user);
     setTimeout(() => {
       setCheckoutNotification(false);
       if (result && result.success && result.checkoutUrl) {
