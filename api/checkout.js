@@ -31,6 +31,7 @@ export default async function handler(req, res) {
     try {
       const params = new URLSearchParams();
       params.append('mode', 'payment');
+      params.append('allow_promotion_codes', 'true');
       params.append('success_url', `https://www.${storeDomain}/?payment_success=true&session_id={CHECKOUT_SESSION_ID}`);
       params.append('cancel_url', `https://www.${storeDomain}/`);
       if (buyerEmail) params.append('customer_email', buyerEmail);
